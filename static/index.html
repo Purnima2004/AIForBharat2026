@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Video Studio — Powered by Gemini</title>
+  <meta name="description" content="Transform your ideas into stunning AI-generated videos using Google Gemini and Veo." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── Animated Background ─── -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ─── Main App Container ─── -->
+  <div class="app" id="app">
+
+    <!-- ════ SCREEN 1: PROMPT INPUT ════ -->
+    <section class="screen active" id="screen-input">
+      <div class="card input-card">
+        <div class="logo-ring">
+          <span class="logo-icon">✦</span>
+        </div>
+
+        <h1 class="title">
+          <span class="gradient-text">AI Video</span>
+          <span class="gradient-text-2">Studio</span>
+        </h1>
+        <p class="subtitle">Describe anything. Watch it come alive.</p>
+
+        <div class="prompt-area">
+          <textarea
+            id="prompt"
+            class="prompt-input"
+            placeholder="A lone astronaut walks across a crimson Mars landscape at golden hour, dust swirling around their boots…"
+            rows="4"
+            maxlength="800"
+          ></textarea>
+          <div class="char-count"><span id="char-count">0</span>/800</div>
+        </div>
+
+        <div class="prompt-examples">
+          <span class="examples-label">Try:</span>
+          <button class="example-chip" onclick="setExample('A serene Japanese forest in autumn, leaves falling gently into a clear stream')">🍂 Autumn forest</button>
+          <button class="example-chip" onclick="setExample('A futuristic city skyline at night with neon lights reflecting on rain-soaked streets')">🌆 Neon city</button>
+          <button class="example-chip" onclick="setExample('A majestic eagle soaring above snow-capped mountains at sunrise')">🦅 Eagle flight</button>
+          <button class="example-chip" onclick="setExample('A magical underwater world with bioluminescent creatures dancing in the deep ocean')">🌊 Deep ocean</button>
+        </div>
+
+        <button class="btn-generate" id="btn-generate" onclick="startGeneration()">
+          <span class="btn-icon">▶</span>
+          <span class="btn-text">Generate Video</span>
+        </button>
+
+        <p class="powered-by">Powered by Gemini Imagen 4 · Veo 2 · Gemini Flash</p>
+      </div>
+    </section>
+
+    <!-- ════ SCREEN 2: LOADING / PROGRESS ════ -->
+    <section class="screen" id="screen-loading">
+      <div class="card loading-card">
+        <div class="film-reel">
+          <div class="reel-outer">
+            <div class="reel-inner">
+              <span class="reel-icon">🎬</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="loading-title">Creating your video…</h2>
+        <p class="loading-subtitle" id="loading-subtitle">Initializing pipeline</p>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps">
+          <div class="step" id="step-1">
+            <div class="step-dot"></div>
+            <div class="step-content">
+              <span class="step-label">Enhancing your prompt</span>
+              <span class="step-desc">Gemini Flash adds cinematic details</span>
+            </div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" id="step-2">
+            <div class="step-dot"></div>
+            <div class="step-content">
+              <span class="step-label">Generating 4 images</span>
+              <span class="step-desc">Imagen 4 creates visual scenes</span>
+            </div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" id="step-3">
+            <div class="step-dot"></div>
+            <div class="step-content">
+              <span class="step-label">Creating video</span>
+              <span class="step-desc">Veo 2 brings images to life</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Prompt Preview -->
+        <div class="enhanced-prompt-box" id="enhanced-prompt-box" style="display:none">
+          <span class="enhanced-label">✨ Enhanced prompt</span>
+          <p id="enhanced-prompt-text"></p>
+        </div>
+
+        <!-- Image Strip Preview -->
+        <div class="image-strip-preview" id="image-strip-preview" style="display:none">
+          <div class="image-thumbs" id="image-thumbs"></div>
+        </div>
+
+        <div class="loading-bar-wrap">
+          <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ SCREEN 3: VIDEO RESULT ════ -->
+    <section class="screen" id="screen-result">
+      <div class="result-wrap">
+
+        <!-- Video Player -->
+        <div class="video-container" id="video-container">
+          <video id="video-player" controls autoplay loop playsinline>
+            Your browser does not support the video tag.
+          </video>
+          <div class="video-overlay" id="video-overlay">
+            <button class="play-btn" id="play-btn" onclick="togglePlay()">▶</button>
+          </div>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="result-controls">
+          <button class="btn-download" id="btn-download" onclick="downloadVideo()">
+            <span>⬇</span> Download Video
+          </button>
+          <button class="btn-new" onclick="resetToStart()">
+            <span>✦</span> New Video
+          </button>
+        </div>
+
+        <!-- Enhanced Prompt -->
+        <div class="result-prompt-box" id="result-prompt-box">
+          <span class="result-prompt-label">✨ Enhanced Prompt Used</span>
+          <p id="result-prompt-text"></p>
+        </div>
+
+        <!-- Image Strip -->
+        <div class="result-images-section">
+          <h3 class="images-title">Generated Scenes</h3>
+          <div class="result-images-grid" id="result-images-grid"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </div><!-- /app -->
+
+  <script src="app.js"></script>
+</body>
+</html>

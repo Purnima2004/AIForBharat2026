@@ -1,0 +1,241 @@
+{
+    "name": "AI Video Generation Studio",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "ai-video",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $vars.GEMINI_API_KEY }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": []
+                },
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"system_instruction\": {\n    \"parts\": [{\"text\": \"You are a world-class AI video director and prompt engineer. Transform the user's simple idea into a rich, detailed, cinematic video prompt. Include: vivid scene description, lighting, mood, camera movement, color palette, textures, emotional tone, and any dialogue or narration if relevant. Output only the enhanced prompt text — no explanations, no preamble.\"}]\n  },\n  \"contents\": [\n    {\n      \"parts\": [{\"text\": \"{{ $json.body.prompt }}\"}]\n    }\n  ]\n}",
+                "options": {}
+            },
+            "id": "enhance-prompt",
+            "name": "Enhance Prompt (Gemini Flash)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                500,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key={{ $vars.GEMINI_API_KEY }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"instances\": [\n    {\n      \"prompt\": \"{{ $json.candidates[0].content.parts[0].text }}\"\n    }\n  ],\n  \"parameters\": {\n    \"sampleCount\": 4\n  }\n}",
+                "options": {
+                    "timeout": 120000
+                }
+            },
+            "id": "generate-images",
+            "name": "Generate Images (Imagen 4)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                760,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key={{ $vars.GEMINI_API_KEY }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"instances\": [\n    {\n      \"prompt\": \"{{ $('Enhance Prompt (Gemini Flash)').item.json.candidates[0].content.parts[0].text }}\",\n      \"image\": {\n        \"bytesBase64Encoded\": \"{{ $json.predictions[0].bytesBase64Encoded }}\",\n        \"mimeType\": \"image/png\"\n      }\n    }\n  ],\n  \"parameters\": {\n    \"aspectRatio\": \"16:9\",\n    \"durationSeconds\": 8,\n    \"sampleCount\": 1\n  }\n}",
+                "options": {
+                    "timeout": 60000
+                }
+            },
+            "id": "veo-submit",
+            "name": "Submit Veo Video Job",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1020,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "=https://generativelanguage.googleapis.com/v1beta/{{ $json.name }}?key={{ $vars.GEMINI_API_KEY }}",
+                "options": {
+                    "timeout": 300000
+                }
+            },
+            "id": "veo-poll",
+            "name": "Poll Veo Operation",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1280,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Webhook Trigger').item.json.body.callbackUrl }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"jobId\": \"{{ $('Webhook Trigger').item.json.body.jobId }}\",\n  \"status\": \"done\",\n  \"enhancedPrompt\": \"{{ $('Enhance Prompt (Gemini Flash)').item.json.candidates[0].content.parts[0].text }}\",\n  \"videoData\": \"{{ $json.done ? $json.response.predictions[0].bytesBase64Encoded : '' }}\"\n}",
+                "options": {}
+            },
+            "id": "callback",
+            "name": "Send Callback to Flask",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1540,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\"ok\": true, \"jobId\": \"{{ $('Webhook Trigger').item.json.body.jobId }}\"}"
+            },
+            "id": "respond",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                500,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Enhance Prompt (Gemini Flash)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enhance Prompt (Gemini Flash)": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Images (Imagen 4)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Images (Imagen 4)": {
+            "main": [
+                [
+                    {
+                        "node": "Submit Veo Video Job",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Submit Veo Video Job": {
+            "main": [
+                [
+                    {
+                        "node": "Poll Veo Operation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Poll Veo Operation": {
+            "main": [
+                [
+                    {
+                        "node": "Send Callback to Flask",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": [
+        "ai",
+        "video",
+        "gemini"
+    ],
+    "meta": {
+        "templateCredsSetupCompleted": false,
+        "n8nVersion": "1.0.0"
+    }
+}
