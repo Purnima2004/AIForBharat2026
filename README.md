@@ -1,4 +1,4 @@
-# 🎬 AI Video Generation Studio
+#  AI Video Generation Studio
 
 Transform any idea into a stunning AI video — powered by **Google Gemini**.
 
@@ -80,9 +80,9 @@ If you want to use the n8n visual workflow instead:
 
 | API | Purpose | Free? |
 |-----|---------|-------|
-| `gemini-2.0-flash` | Prompt enhancement | ✅ Free tier |
-| `imagen-4.0-generate-001` | 4 image generation | ✅ Free tier |
-| `veo-2.0-generate-001` | Image → Video | 💰 Paid (free GIF fallback included) |
+| `gemini-2.0-flash` | Prompt enhancement | Free tier |
+| `imagen-4.0-generate-001` | 4 image generation | Free tier |
+| `veo-2.0-generate-001` | Image → Video | Paid (free GIF fallback included) |
 
 ---
 
